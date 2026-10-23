@@ -64,6 +64,32 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(0,0,0,0.3);
         }
+
+        /* Specific styles when wheel section is in browser native full screen */
+        #wheelSection:fullscreen {
+            background-color: #0f172a; /* Dark sleek slate background */
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: none;
+            border-radius: 0;
+        }
+        #wheelSection:-webkit-full-screen {
+            background-color: #0f172a;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: none;
+            border-radius: 0;
+        }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
@@ -80,14 +106,14 @@
                     <h1 class="font-extrabold text-lg sm:text-xl bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600">
                         幸運抽獎輪
                     </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Wheel of Names </p>
+                    <p class="text-xs text-slate-400 hidden sm:block">Wheel of Names</p>
                 </div>
             </div>
 
             <!-- Action Tools -->
             <div class="flex items-center space-x-2 sm:space-x-3">
-                <button id="fullscreenBtn" onclick="toggleFullscreen()" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="全螢幕模式">
-                    <i class="fa-solid fa-expand text-lg"></i>
+                <button id="fullscreenBtn" onclick="toggleFullscreen()" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="整頁全螢幕模式">
+                    <i class="fa-solid fa-maximize text-lg"></i>
                 </button>
                 <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="聲音切換">
                     <i class="fa-solid fa-volume-high text-lg" id="soundIcon"></i>
@@ -107,10 +133,16 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- Left Wheel Viewport (lg:col-span-7) -->
-        <section class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative min-h-[480px]">
+        <section id="wheelSection" class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative min-h-[480px] overflow-hidden">
             
+            <!-- Wheel Only Fullscreen Toggle Button -->
+            <button id="wheelOnlyFullscreenBtn" onclick="toggleWheelOnlyFullscreen()" class="absolute top-4 right-4 z-30 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 shadow-sm transition flex items-center gap-2 text-xs font-semibold" title="僅全螢幕顯示轉盤">
+                <i class="fa-solid fa-expand text-base" id="wheelFullscreenIcon"></i>
+                <span class="hidden sm:inline" id="wheelFullscreenText">僅顯示轉盤全螢幕</span>
+            </button>
+
             <!-- Canvas Container -->
-            <div class="relative w-full max-w-[500px] aspect-square flex items-center justify-center my-auto">
+            <div id="canvasContainer" class="relative w-full max-w-[500px] aspect-square flex items-center justify-center my-auto">
                 
                 <!-- Pointer Marker (Right pointing to Center) -->
                 <div id="pointerMarker" class="absolute right-[-12px] sm:right-[-16px] top-1/2 -translate-y-1/2 z-20 pointer-events-none filter drop-shadow-md origin-right transition-transform">
@@ -133,6 +165,33 @@
                     <i class="fa-solid fa-rotate text-xl"></i>
                     <span>開始抽獎！</span>
                 </button>
+            </div>
+
+            <!-- Winner Winner Modal (Moved inside wheelSection so it displays in wheel fullscreen mode) -->
+            <div id="winnerModal" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 text-center transform scale-90 transition-transform duration-300 flex flex-col items-center">
+                    
+                    <!-- Confetti Icon Header -->
+                    <div class="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center text-4xl mb-4 shadow-inner animate-bounce">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">恭喜獲得大獎！</h3>
+                    <h2 id="winnerNameText" class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white my-4 break-all leading-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-amber-500 to-indigo-600">
+                        ---
+                    </h2>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col sm:flex-row gap-3 w-full mt-4">
+                        <button onclick="removeWinnerEntry()" class="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-rose-500 hover:bg-rose-600 active:scale-95 transition shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-minus"></i>
+                            <span>移除此選項</span>
+                        </button>
+                        <button onclick="closeWinnerModal()" class="flex-1 py-3 px-4 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition">
+                            保留並關閉
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -285,8 +344,7 @@
         
         // Initial Default Entries
         const defaultEntries = [
-           "四嬸","Daniel","Terry","Ling","Ceci","二叔","二嬸","Desy","Mabel","Tiffany","Ronald","Sue","Kimberly","Alvin","卿姐",
-"Anthony"
+            "四嬸","Daniel","Terry","Ling","Ceci","二叔","二嬸","Desy","Mabel","Tiffany","Ronald","Sue","Kimberly","Alvin","卿姐","Anthony"
         ];
 
         // Color Palettes
@@ -386,9 +444,19 @@
         // Responsive Canvas Scaling
         function resizeCanvas() {
             const container = canvas.parentElement;
-            const size = Math.min(container.clientWidth, 500);
+            const isWheelFullscreen = document.fullscreenElement === document.getElementById('wheelSection');
+            
+            let size;
+            if (isWheelFullscreen) {
+                size = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.7, 650);
+            } else {
+                size = Math.min(container.clientWidth, 500);
+            }
+
             const dpr = window.devicePixelRatio || 1;
             
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
             canvas.width = size * dpr;
             canvas.height = size * dpr;
             ctx.scale(dpr, dpr);
@@ -669,16 +737,16 @@
                         <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center">
                             ${winners.length - idx}
                         </span>
-                        <span class="font-bold text-slate-800 dark:text-slate-100">${escapeHtml(w.name)}</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-100">${w.name}</span>
                     </div>
-                    <span class="text-xs text-slate-400 font-mono">${w.time}</span>
+                    <span class="text-xs text-slate-400">${w.time}</span>
                 </div>
             `).join('');
         }
 
         function clearWinners() {
             if (winners.length === 0) return;
-            if (confirm("確定要清除所有中獎歷史紀錄嗎？")) {
+            if (confirm("確定要清除所有中獎紀錄嗎？")) {
                 winners = [];
                 updateWinnersListUI();
             }
@@ -686,35 +754,29 @@
 
         function exportWinners() {
             if (winners.length === 0) {
-                alert("目前沒有可匯出的中獎紀錄。");
+                alert("目前沒有可匯出的中獎紀錄！");
                 return;
             }
-            const content = "序號,姓名,時間\n" + winners.map((w, i) => `${winners.length - i},"${w.name}",${w.time}`).join("\n");
-            const blob = new Blob(["\uFEFF" + content], { type: 'text/csv;charset=utf-8;' });
+            const textContent = winners.map((w, i) => `${winners.length - i}. ${w.name} (${w.time})`).join('\n');
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `lucky_wheel_winners_${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `lucky-winners-${new Date().toISOString().slice(0, 10)}.txt`;
             a.click();
             URL.revokeObjectURL(url);
         }
 
-        function escapeHtml(text) {
-            return text.replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-            });
-        }
-
-        function switchTab(tab) {
+        function switchTab(tabName) {
             const entriesPanel = document.getElementById('entriesPanel');
             const winnersPanel = document.getElementById('winnersPanel');
             const tabEntriesBtn = document.getElementById('tabEntriesBtn');
             const tabWinnersBtn = document.getElementById('tabWinnersBtn');
 
-            if (tab === 'entries') {
+            if (tabName === 'entries') {
                 entriesPanel.classList.remove('hidden');
                 winnersPanel.classList.add('hidden');
-                
+
                 tabEntriesBtn.className = "flex-1 py-2 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm";
                 tabWinnersBtn.className = "flex-1 py-2 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50";
             } else {
@@ -726,7 +788,76 @@
             }
         }
 
+        /* Fullscreen Toggle for Entire Page */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        /* Wheel Only Fullscreen Toggle */
+        function toggleWheelOnlyFullscreen() {
+            const wheelSection = document.getElementById('wheelSection');
+            if (!document.fullscreenElement) {
+                if (wheelSection.requestFullscreen) {
+                    wheelSection.requestFullscreen();
+                } else if (wheelSection.webkitRequestFullscreen) {
+                    wheelSection.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // Listen for Fullscreen Change Events to update UI icons & Canvas scaling
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const wheelSection = document.getElementById('wheelSection');
+            const icon = document.getElementById('wheelFullscreenIcon');
+            const text = document.getElementById('wheelFullscreenText');
+
+            if (document.fullscreenElement === wheelSection) {
+                icon.className = 'fa-solid fa-compress text-base';
+                text.innerText = '退出全螢幕';
+            } else {
+                icon.className = 'fa-solid fa-expand text-base';
+                text.innerText = '僅顯示轉盤全螢幕';
+            }
+            
+            setTimeout(resizeCanvas, 100);
+        }
+
+        function toggleSound() {
+            appSettings.soundEnabled = !appSettings.soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            const check = document.getElementById('soundEffectCheck');
+            
+            if (appSettings.soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-lg';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg text-rose-500';
+            }
+            if (check) check.checked = appSettings.soundEnabled;
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
         function openSettingsModal() {
+            renderThemePresets();
             const modal = document.getElementById('settingsModal');
             modal.classList.remove('opacity-0', 'pointer-events-none');
         }
@@ -743,15 +874,23 @@
 
         function renderThemePresets() {
             const container = document.getElementById('themePresetContainer');
+            const themeNames = {
+                rainbow: '彩虹繽紛',
+                macaron: '馬卡龍',
+                neon: '炫彩霓虹',
+                sunset: '夕陽餘暉',
+                emerald: '翡翠森林'
+            };
+
             container.innerHTML = Object.keys(colorThemes).map(key => {
-                const isSelected = key === activeThemeKey;
-                const palette = colorThemes[key];
+                const colors = colorThemes[key];
+                const isSelected = activeThemeKey === key;
                 return `
-                    <button onclick="selectTheme('${key}')" class="p-2 rounded-xl border flex items-center justify-between transition ${isSelected ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}">
-                        <div class="flex h-4 w-20 rounded-full overflow-hidden shadow-inner">
-                            ${palette.slice(0, 5).map(c => `<div class="flex-1 h-full" style="background-color:${c}"></div>`).join('')}
+                    <button onclick="selectTheme('${key}')" class="p-2.5 rounded-xl border-2 flex flex-col items-center gap-1.5 transition ${isSelected ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}">
+                        <div class="flex h-4 w-full rounded-full overflow-hidden shadow-inner">
+                            ${colors.slice(0, 5).map(c => `<div class="flex-1 h-full" style="background-color:${c}"></div>`).join('')}
                         </div>
-                        <span class="text-xs font-semibold capitalize text-slate-600 dark:text-slate-300">${key}</span>
+                        <span class="text-xs font-semibold ${isSelected ? 'text-rose-500' : 'text-slate-600 dark:text-slate-300'}">${themeNames[key] || key}</span>
                     </button>
                 `;
             }).join('');
@@ -763,42 +902,13 @@
             drawWheel();
         }
 
-        // Sound Toggle Button
-        function toggleSound() {
-            appSettings.soundEnabled = !appSettings.soundEnabled;
-            document.getElementById('soundEffectCheck').checked = appSettings.soundEnabled;
-            const icon = document.getElementById('soundIcon');
-            if (appSettings.soundEnabled) {
-                icon.className = "fa-solid fa-volume-high text-lg";
-            } else {
-                icon.className = "fa-solid fa-volume-xmark text-lg text-slate-400";
-            }
-        }
-
-        // Fullscreen Toggle
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => console.log(e));
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
-        }
-
-        // Dark Mode Toggle
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
+        // Initialization
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = function() {
             updateTextareaFromEntries();
             updateWinnersListUI();
-            renderThemePresets();
             resizeCanvas();
-
-            window.addEventListener('resize', resizeCanvas);
-        });
+        };
     </script>
 </body>
 </html>
